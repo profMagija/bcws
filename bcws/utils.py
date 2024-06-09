@@ -23,6 +23,7 @@ _P = t.ParamSpec("_P")
 
 def run_in_background(func: t.Callable[_P, t.Any], *args: _P.args, **kwargs: _P.kwargs):
     thread = threading.Thread(target=func, args=args, kwargs=kwargs)
+    thread.daemon = True
     thread.start()
 
 

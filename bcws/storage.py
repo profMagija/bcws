@@ -1,33 +1,38 @@
-import json
-import typing as t
 import os
 
 
+class StorageMaster:
+    def __init__(self, root: str):
+        self.root = root
+
+
 class Storage:
-    def __init__(self):
-        os.makedirs(".stor", exist_ok=True)
-        os.makedirs(".stor/objects", exist_ok=True)
+    def __init__(self, master: StorageMaster, name: str):
+        self.master = master
+        self.name = name
 
-    def exists_object(self, kind: str, ident: str):
-        return os.path.exists(f".stor/objects/{kind}/{ident}.json")
+        if not os.path.exists(os.path.join(self.master.root, name)):
+            os.makedirs(os.path.join(self.master.root, name))
 
-    def get_all_objects(self, kind: str):
-        for ident in os.listdir(f".stor/objects/{kind}"):
-            with open(f".stor/objects/{kind}/{ident}", "r") as f:
-                yield ident, json.load(f)
+    def exists(self, path: str) -> bool:
+        return os.path.exists(self._make_path(path))
 
-    def get_object(self, kind: str, ident: str):
-        if not self.exists_object(kind, ident):
+    def load(self, path: str) -> str | None:
+        try:
+            with open(self._make_path(path), "r") as f:
+                return f.read()
+        except FileNotFoundError:
             return None
 
-        with open(f".stor/objects/{kind}/{ident}.json", "r") as f:
-            return json.load(f)
+    def save(self, path: str, content: str):
+        with open(self._make_path(path), "w") as f:
+            f.write(content)
 
-    def put_object(self, kind: str, ident: str, obj: t.Any):
-        os.makedirs(f".stor/objects/{kind}", exist_ok=True)
-        with open(f".stor/objects/{kind}/{ident}.json", "w") as f:
-            json.dump(obj, f, indent=2)
+    def delete(self, path: str):
+        os.remove(self._make_path(path))
 
-    def delete_object(self, kind: str, ident: str):
-        if self.exists_object(kind, ident):
-            os.remove(f".stor/objects/{kind}/{ident}.json")
+    def _make_path(self, path: str) -> str:
+        return os.path.join(self.master.root, self.name, path)
+
+    def __repr__(self) -> str:
+        return f"Storage({self.name!r})"

@@ -30,7 +30,7 @@ class PublicKey:
 
     @classmethod
     def from_bytes(cls, data: bytes):
-        return cls(ecdsa.VerifyingKey.from_string(bytes.fromhex(data)))
+        return cls(ecdsa.VerifyingKey.from_string(data))
 
     def to_bytes(self) -> bytes:
         return self._key.to_string(encoding="compressed")

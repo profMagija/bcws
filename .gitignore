@@ -2,3 +2,4 @@
 /.venv
 *.pyc
 /snipped
+network_layout.txt
