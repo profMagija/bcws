@@ -1,4 +1,5 @@
 # --------8<--------
+import json
 import random
 
 # --------8<--------
@@ -40,7 +41,7 @@ class P2PPeer:
 class P2PNetwork:
     # ! needs to be implemented
 
-    def __init__(self, messaging: UDPMessaging, peer_limit: int = 5):
+    def __init__(self, messaging: UDPMessaging, peer_limit: int = 4):
         self.messaging = messaging
         self.peer_limit = peer_limit
         self.my_id = generate_id("p2p")
@@ -162,7 +163,8 @@ class P2PNetwork:
     def _handle_pong(self, message: UDPMessage, sender: UDPPeer):
         log("p2p", "received pong from", sender)
 
-        self.last_seen[message.data] = time.time()
+        if message.data in self.peers:
+            self.last_seen[message.data] = time.time()
 
     def _handle_announce(self, message: UDPMessage, sender: UDPPeer):
         log("p2p", "received announce from", sender)
@@ -247,9 +249,9 @@ def _network_discovery_loop(net: P2PNetwork, start_loop: bool = True):
         for node_id, peers in node_peers.items():
             node_peers[node_id] = peers
 
-        with open("network_layout.txt", "w") as f:
-            for node_id in sorted(node_peers.keys()):
-                f.write(f"{node_id}: {', '.join(node_peers[node_id])}\n")
+        data = [[node_id, node_peers[node_id]] for node_id in sorted(node_peers.keys())]
+
+        with open("network_layout.json", "w") as f:
+            json.dump(data, f)
 
         time.sleep(2)
-    # ---------8<---------

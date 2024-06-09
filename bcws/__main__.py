@@ -217,20 +217,29 @@ def blockchain(port: int, peer: list[str], nd: bool, ds: bool, state_dir: str):
 
         @run_in_background
         def _():
-            while True:
-                blocks = [
-                    b.to_json() for b in blockchain_node.canonicaliser.iter_blocks()
-                ]
-                latest_state = (
-                    blockchain_node.canonicaliser.get_latest_state().to_json()
-                )
-                with open("state.json", "w") as f:
-                    json.dump(
-                        {"blocks": blocks, "latest_state": latest_state},
-                        f,
-                        indent=2,
+            try:
+                while True:
+                    transactions = [
+                        tx.to_json()
+                        for block in blockchain_node.canonicaliser.iter_blocks()
+                        for tx in block.transactions
+                    ]
+                    latest_block = blockchain_node.canonicaliser.get_block_by_number(-1)
+                    latest_state = (
+                        blockchain_node.canonicaliser.get_latest_state().to_json()
                     )
-                time.sleep(10)
+                    with open("state.json", "w") as f:
+                        json.dump(
+                            {
+                                "transactions": transactions,
+                                "latest_state": latest_state,
+                                "latest_block": latest_block.to_json(),
+                            },
+                            f,
+                        )
+                    time.sleep(1)
+            except Exception as e:
+                log("err", e)
 
     while True:
         action = input("[s]end, [b]alance, [n]once, [l]atest, [q]uit: ").lower()

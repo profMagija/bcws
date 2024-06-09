@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        :root,
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+
+            background: #000;
+            color: #fff;
+        }
+
+        body {
+            display: flex;
+            flex-direction: row;
+        }
+
+        .block-info {
+            background: #111;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            margin: 20px auto;
+            padding: 20px;
+            max-width: 600px;
+            width: 100%;
+            display: inline-block;
+        }
+
+        .block-info h2 {
+            font-size: 24px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .block-info .field {
+            margin-bottom: 15px;
+        }
+
+        .block-info .field span {
+            font-weight: bold;
+            color: #dcc;
+        }
+
+        .block-info .field .value {
+            color: #ccc
+        }
+
+        .listing .field {
+            background: #222;
+            border-radius: 10px;
+            padding: 10px 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="block-info">
+        <h2>Latest Block Info</h2>
+        <div class="field">
+            <span>Block Number:</span>
+            <div class="value" id="blockNumber">Loading...</div>
+        </div>
+        <div class="field">
+            <span>Block hash:</span>
+            <div class="value" id="blockhash">Loading...</div>
+        </div>
+        <div class="field">
+            <span>Parent hash:</span>
+            <div class="value" id="parenthash">Loading...</div>
+        </div>
+        <div class="field">
+            <span>Transactions:</span>
+            <div class="value" id="transactions">Loading...</div>
+        </div>
+        <div class="field">
+            <span>Coinbase:</span>
+            <div class="value" id="miner">Loading...</div>
+        </div>
+        <div class="field">
+            <span>Nonce:</span>
+            <div class="value" id="nonce">Loading...</div>
+        </div>
+    </div>
+
+    <div class="block-info listing">
+        <h2>Latest state</h2>
+        <div id="latest-state"></div>
+    </div>
+
+    <div class="block-info listing">
+        <h2>Transactions</h2>
+        <div id="transactions-list"></div>
+    </div>
+
+    <script>
+        function update() {
+            fetch("/state")
+                .then(res => res.json())
+                .then(data => {
+                    console.log(data);
+
+                    var latestBlock = data.latest_block;
+                    var latestState = data.latest_state;
+                    var transactions = data.transactions;
+
+                    dgeid("blockNumber").innerText = latestBlock.number;
+                    dgeid("blockhash").innerText = latestBlock.hash;
+                    dgeid("parenthash").innerText = latestBlock.parent_hash;
+                    dgeid("transactions").innerText = latestBlock.transactions.length;
+                    dgeid("miner").innerText = latestBlock.coinbase;
+                    dgeid("nonce").innerText = latestBlock.nonce;
+
+                    dgeid("latest-state").innerHTML = "";
+
+                    var allAddresses = Object.keys(latestState.balances);
+                    allAddresses.sort();
+                    allAddresses.forEach(addr => {
+                        var div = document.createElement("div");
+                        div.classList.add("field");
+                        div.innerHTML = `
+                            <span>${addr}</span>
+                            <div class="value"><b>Balance:</b> ${latestState.balances[addr]}</div>
+                            <div class="value"><b>Nonce:</b> ${latestState.nonces[addr] || 0}</div>
+                        `;
+                        dgeid("latest-state").appendChild(div);
+                    });
+
+
+                    dgeid("transactions-list").innerHTML = "";
+
+                    console.log(transactions)
+
+                    transactions.forEach(tx => {
+                        var div = document.createElement("div");
+                        div.classList.add("field");
+                        div.innerHTML = `
+                            <span>${tx.hash}</span> 
+                            <div class="value"><b>From:</b> ${tx.sender}</div>
+                            <div class="value"><b>To:</b> ${tx.receiver}</div>
+                            <div class="value"><b>Amount:</b> ${tx.amount}</div>
+                            <div class="value"><b>Nonce:</b> ${tx.nonce}</div>
+                        `;
+                        dgeid("transactions-list").appendChild(div);
+                    });
+
+                    console.log(dgeid("transactions"))
+                });
+        }
+
+        dgeid = (id) => document.getElementById(id);
+
+        setInterval(update, 1000);
+        update();
+    </script>
+</body>
+
+</html>

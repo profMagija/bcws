@@ -11,7 +11,7 @@ from .gossip import Gossip, GossipMessage
 from .crypto import PrivateKey, PublicKey
 from .utils import log, run_in_background
 
-_DIFFICULTY = 5
+_DIFFICULTY = 6
 _MAX_TRANSACTIONS_PER_BLOCK = 10
 _BLOCK_REWARD = 10000
 
@@ -200,6 +200,7 @@ class Transaction:
 
     def to_json(self) -> dict[str, t.Any]:
         return {
+            "hash": self.hash().hex(),
             "sender": self.sender.hex(),
             "receiver": self.receiver.hex(),
             "nonce": self.nonce,
@@ -518,6 +519,8 @@ class ChainCanonicaliser:
         return Block.deserialize(data)
 
     def get_block_by_number(self, number: int) -> Block:
+        if number == -1:
+            number = self.latest_num
         hash = self.blocknum_storage.load(str(number))
         if hash is None:
             raise ValueError("Block not found", number)

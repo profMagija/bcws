@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="https://unpkg.com/cytoscape@3.29.2/dist/cytoscape.min.js"></script>
+    <script src="https://unpkg.com/layout-base/layout-base.js"></script>
+    <script src="https://unpkg.com/cose-base/cose-base.js"></script>
+    <script src="https://unpkg.com/cytoscape-cose-bilkent/cytoscape-cose-bilkent.js"></script>
+
+
+    <style>
+        :root,
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            width: 100%;
+        }
+
+        #cy {
+            width: 100vw;
+            height: 100vh;
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="cy"></div>
+
+    <script>
+
+
+        var cy;
+
+        var num = 1;
+
+        document.addEventListener("DOMContentLoaded", function () {
+            console.log('init')
+            setInterval(update, 1000);
+            update();
+
+            cy = cytoscape({
+                container: document.getElementById('cy'),
+                style: [
+                    {
+                        selector: 'node',
+                        style: {
+                            content: 'data(id)'
+                        }
+                    },
+                    {
+                        selector: 'edge',
+                        style: {
+                            'curve-style': 'bezier',
+                            'target-arrow-shape': 'triangle'
+                        }
+                    }
+                ]
+            });
+        })
+
+        var lastJson = "";
+
+        function update() {
+            fetch("/network_layout")
+                .then(res => res.json())
+                .then(data => {
+
+                    if (JSON.stringify(data) == lastJson) {
+                        return;
+                    }
+
+                    lastJson = JSON.stringify(data);
+
+                    var allNodeIds = data.map(e => e[0]);
+                    var existingNodes = [];
+
+                    // remove all edges
+                    cy.remove('edge');
+
+                    // remote all nodes not in data
+                    cy.nodes().forEach(element => {
+                        if (allNodeIds.includes(element.data('id'))) {
+                            existingNodes.push(element.data('id'))
+                        } else {
+                            element.remove()
+                        }
+                    });
+
+                    data.forEach(element => {
+                        if (!existingNodes.includes(element[0])) {
+                            cy.add({
+                                group: 'nodes',
+                                data: {
+                                    id: element[0],
+                                    label: element[0]
+                                }
+                            })
+                        }
+                    });
+
+                    data.forEach(element => {
+                        element[1].forEach(e => {
+                            cy.add({
+                                group: 'edges',
+                                data: {
+                                    id: element[0] + e,
+                                    source: element[0],
+                                    target: e,
+                                    arrow: 'triangle'
+                                }
+                            })
+                        });
+                    });
+
+                    cy.layout({
+                        name: 'circle',
+                        animate: 'end',
+                        idealEdgeLength: 300,
+
+                        // numIter: 100000,
+                    }).run();
+                })
+        }
+
+    </script>
+</body>
+
+</html>
