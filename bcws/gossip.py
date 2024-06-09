@@ -3,7 +3,7 @@ import json
 import time
 import typing as t
 
-from .messaging import UDPMessage, UDPMessaging
+from .messaging import UDPMessage, UDPMessaging, UDPPeer
 from .peering import P2PNetwork
 from .utils import run_in_background, log
 
@@ -64,7 +64,7 @@ class Gossip:
 
         run_in_background(self.network.broadcast, message.to_message("gossip:send"))
 
-    def _handle_send(self, message: UDPMessage):
+    def _handle_send(self, message: UDPMessage, _: UDPPeer):
         gossip = GossipMessage.from_message(message)
         if gossip.ident in self._known_messages:
             return

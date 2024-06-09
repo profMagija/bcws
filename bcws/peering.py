@@ -1,4 +1,7 @@
+# --------8<--------
 import random
+
+# --------8<--------
 import time
 
 from .messaging import UDPMessage, UDPMessaging, UDPPeer
@@ -37,33 +40,50 @@ class P2PPeer:
 class P2PNetwork:
     # ! needs to be implemented
 
-    def __init__(self, messaging: UDPMessaging, peer_limit: int = 4):
+    def __init__(self, messaging: UDPMessaging, peer_limit: int = 5):
         self.messaging = messaging
+        self.peer_limit = peer_limit
         self.my_id = generate_id("p2p")
         self.peers: dict[str, P2PPeer] = {}
+        # <<raise NotImplementedError("P2PNetwork needs to be implemented")
+        # ---------8<---------
         self.last_seen: dict[str, float] = {}
-        self.peer_limit = peer_limit
 
         self.messaging.register("p2p:announce", self._handle_announce)
         self.messaging.register("p2p:ask_for_peers", self._handle_ask_for_peers)
         self.messaging.register("p2p:peers", self._handle_peers)
         self.messaging.register("p2p:ping", self._handle_ping)
         self.messaging.register("p2p:pong", self._handle_pong)
+        # ---------8<---------
 
     def make_peer(self, addr: str | tuple[str, int] | UDPPeer, ident: str):
+        """
+        Create a peer object from an address and an identifier.
+        """
         if not isinstance(addr, UDPPeer):
             addr = UDPPeer(addr)
 
         return P2PPeer(self, addr, ident)
 
-    def announce_to(self, addr: str | tuple[str, int] | UDPPeer):
+    def announce_to(self, addr: str | tuple[str, int] | UDPPeer) -> None:
+        """
+        Announce the current node to another node, and asks it for its peers.
+        """
         if not isinstance(addr, UDPPeer):
             addr = UDPPeer(addr)
 
+        # <<raise NotImplementedError("P2PNetwork needs to be implemented")
+        # ---------8<---------
         self.messaging.send(addr, UDPMessage("p2p:announce", self.my_id))
         self.messaging.send(addr, UDPMessage("p2p:ask_for_peers", None))
+        # ---------8<---------
 
-    def add_peer(self, peer: P2PPeer):
+    def add_peer(self, peer: P2PPeer) -> None:
+        """
+        Add a peer to the list of known peers, and announce self to the peer.
+        """
+        # <<raise NotImplementedError("P2PNetwork needs to be implemented")
+        # ---------8<---------
         if peer.ident in self.peers:
             # don't add peer if already in peers
             return
@@ -82,19 +102,37 @@ class P2PNetwork:
             del self.peers[random.choice(list(self.peers.keys()))]
 
         self.announce_to(peer.udp)
+        # ---------8<---------
 
-    def start(self):
+    def start(self) -> None:
+        # <<raise NotImplementedError("P2PNetwork needs to be implemented")
+        # ---------8<---------
         self.messaging.start()
         run_in_background(self._peer_loop)
+        # ---------8<---------
 
     def start_network_discovery(self, start_loop: bool = True):
+        """
+        Starts the network mapping deamon, used to visualize the network.
+        """
         run_in_background(_network_discovery_loop, self, start_loop)
 
-    def send(self, peer: P2PPeer, message: UDPMessage):
+    def send(self, peer: P2PPeer, message: UDPMessage) -> None:
+        """
+        Send a message to a peer.
+        """
+        # <<raise NotImplementedError("P2PNetwork needs to be implemented")
+        # ---------8<---------
         log("p2p", "sending message to", peer)
         self.messaging.send(peer.udp, message)
+        # ---------8<---------
 
-    def broadcast(self, message: UDPMessage):
+    def broadcast(self, message: UDPMessage) -> None:
+        """
+        Broadcast a message to all known peers.
+        """
+        # <<raise NotImplementedError("P2PNetwork needs to be implemented")
+        # ---------8<---------
         targets = self.peers.values()
         log("p2p", f"broadcasting message to {len(targets)} peers")
 
@@ -116,71 +154,60 @@ class P2PNetwork:
 
             time.sleep(_PING_INTERVAL)
 
-    def _handle_ping(self, message: UDPMessage):
-        if message.sender is None:
-            return
+    def _handle_ping(self, _: UDPMessage, sender: UDPPeer):
+        log("p2p", "received ping from", sender)
 
-        log("p2p", "received ping from", message.sender)
+        self.messaging.send(sender, UDPMessage("p2p:pong", self.my_id))
 
-        self.messaging.send(message.sender, UDPMessage("p2p:pong", self.my_id))
-
-    def _handle_pong(self, message: UDPMessage):
-        if message.sender is None:
-            return
-
-        log("p2p", "received pong from", message.sender)
+    def _handle_pong(self, message: UDPMessage, sender: UDPPeer):
+        log("p2p", "received pong from", sender)
 
         self.last_seen[message.data] = time.time()
 
-    def _handle_announce(self, message: UDPMessage):
-        if message.sender is None:
-            return
-
-        log("p2p", "received announce from", message.sender)
+    def _handle_announce(self, message: UDPMessage, sender: UDPPeer):
+        log("p2p", "received announce from", sender)
 
         ident = message.data
-        peer = self.make_peer(message.sender, ident)
+        peer = self.make_peer(sender, ident)
         self.add_peer(peer)
 
-    def _handle_ask_for_peers(self, message: UDPMessage):
-        if message.sender is None:
-            return
-
-        log("p2p", "sending peers to", message.sender)
+    def _handle_ask_for_peers(self, _: UDPMessage, sender: UDPPeer):
+        log("p2p", "sending peers to", sender)
 
         peers: list[tuple[tuple[str, int], str]] = []
         for ident, peer in self.peers.items():
             peers.append((peer.udp.address, ident))
 
-        self.messaging.send(message.sender, UDPMessage("p2p:peers", peers))
+        self.messaging.send(sender, UDPMessage("p2p:peers", peers))
 
-    def _handle_peers(self, message: UDPMessage):
-        log("p2p", "received peers from", message.sender)
+    def _handle_peers(self, message: UDPMessage, sender: UDPPeer):
+        log("p2p", "received peers from", sender)
 
         peers = message.data
         for addr, ident in peers:
             self.add_peer(self.make_peer(addr, ident))
 
+    # ---------8<---------
+
 
 def _network_discovery_loop(net: P2PNetwork, start_loop: bool = True):
-    node_peer: dict[str, P2PPeer] = {}
+    """
+    Network mapping deamon, used to visualize the network.
+    """
     node_last_seen: dict[str, float] = {}
     node_peers: dict[str, list[str]] = {}
 
-    def _handle_get_peers(message: UDPMessage):
-        if message.sender is None:
-            return
-
+    def _handle_get_peers(message: UDPMessage, sender: UDPPeer):
         peers: list[str] = []
         for node_id in net.peers.keys():
             peers.append(node_id)
 
         net.send(
-            net.make_peer(message.sender, message.data),
+            net.make_peer(sender, message.data),
             UDPMessage("p2pd:get_peers_resp", [net.my_id, peers]),
         )
 
-    def _handle_get_peers_resp(message: UDPMessage):
+    def _handle_get_peers_resp(message: UDPMessage, sender: UDPPeer):
         node_id, peers = message.data
         node_peers[node_id] = peers
         node_last_seen[node_id] = time.time()
@@ -192,6 +219,11 @@ def _network_discovery_loop(net: P2PNetwork, start_loop: bool = True):
 
     if not start_loop:
         return
+
+    # <<raise NotImplementedError("_network_discovery_loop should not be started here")
+    # ---------8<---------
+
+    node_peer: dict[str, P2PPeer] = {}
 
     while True:
         for node_id, peer in list(net.peers.items()):
@@ -220,3 +252,4 @@ def _network_discovery_loop(net: P2PNetwork, start_loop: bool = True):
                 f.write(f"{node_id}: {', '.join(node_peers[node_id])}\n")
 
         time.sleep(2)
+    # ---------8<---------

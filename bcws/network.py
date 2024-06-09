@@ -1,6 +1,10 @@
+# --------8<--------
 import socket
 
-from .utils import run_in_background, log
+from .utils import run_in_background
+
+# --------8<--------
+from .utils import log
 
 
 class UDPPeer:
@@ -9,14 +13,6 @@ class UDPPeer:
 
     Can be created from a string in the format "address:port", or a tuple of
     (address, port).
-
-    >>> peer = UDPPeer("127.0.0.1:12345")
-    >>> peer
-    <udp peer 127.0.0.1:12345>
-
-    >>> peer = UDPPeer(("127.0.0.1", 12345))
-    >>> peer
-    <udp peer 127.0.0.1:12345>
     """
 
     def __init__(self, address: tuple[str, int] | str):
@@ -59,6 +55,8 @@ class UDPNode:
     #! needs to be implemented
 
     def __init__(self, port: int, handler: UDPHandler):
+        # <<raise NotImplementedError("UDPNode.__init__")
+        # --------8<--------
         self.port = port
         self.handler = handler
 
@@ -66,11 +64,17 @@ class UDPNode:
         self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
         self.socket.bind(("0.0.0.0", port))
+        # --------8<--------
 
-    def start(self):
+    def start(self) -> None:
+        # <<raise NotImplementedError("UDPNode.start")
+        # --------8<--------
         run_in_background(self._recv_loop)
+        # --------8<--------
 
-    def send(self, peer: UDPPeer, data: bytes):
+    def send(self, peer: UDPPeer, data: bytes) -> None:
+        # <<raise NotImplementedError("UDPNode.send")
+        # --------8<--------
         self.socket.sendto(data, peer.address)
         log("udp", f"send {peer} : {data.hex()}")
 
@@ -79,6 +83,8 @@ class UDPNode:
         while True:
             data, address = self.socket.recvfrom(1024)
             self.handler.handle_receive(data, UDPPeer(address))
+
+        # --------8<--------
 
 
 class PrintingHandler(UDPHandler):

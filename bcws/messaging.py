@@ -12,21 +12,20 @@ class UDPMessage:
     optional sender. This is a higher-level abstraction on top of raw bytes.
     """
 
-    def __init__(self, kind: str, data: t.Any, sender: t.Optional[UDPPeer] = None):
+    def __init__(self, kind: str, data: t.Any):
         self.kind = kind
-        self.sender = sender
         self.data = data
 
     @staticmethod
-    def from_bytes(content: bytes, sender: t.Optional[UDPPeer] = None) -> "UDPMessage":
+    def from_bytes(content: bytes) -> "UDPMessage":
         kind, data = json.loads(content)
-        return UDPMessage(kind, data, sender)
+        return UDPMessage(kind, data)
 
     def to_bytes(self) -> bytes:
         return json.dumps([self.kind, self.data]).encode()
 
 
-MessageHandler = t.Callable[[UDPMessage], None]
+MessageHandler = t.Callable[[UDPMessage, UDPPeer], None]
 
 
 class MessageDispatchHandler(UDPHandler):
@@ -39,8 +38,8 @@ class MessageDispatchHandler(UDPHandler):
 
     def handle_receive(self, data: bytes, address: UDPPeer):
         try:
-            message = UDPMessage.from_bytes(data, address)
-            self.dispatch.dispatch(message)
+            message = UDPMessage.from_bytes(data)
+            self.dispatch.dispatch(message, address)
         except:
             traceback.print_exc()
 
@@ -77,11 +76,11 @@ class UDPMessaging:
 
         self.handlers[kind] = handler
 
-    def dispatch(self, message: UDPMessage):
+    def dispatch(self, message: UDPMessage, sender: UDPPeer):
         """Dispatches a message to the appropriate handler."""
-        log("msg", f"recv {message.sender}: {message.kind} {message.data!r}")
+        log("msg", f"recv {sender}: {message.kind} {message.data!r}")
         handler = self.handlers.get(message.kind)
         if handler is not None:
-            handler(message)
+            handler(message, sender)
         else:
             log("err", f"no handler for {message.kind}")
