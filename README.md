@@ -278,3 +278,59 @@ The block building function should:
 * The blocks `nonce` should be such that the hash of the block has `difficulty` number of leading zeros.
 
 In the file [blockchain.py](bcws/blockchain.py) you will find a skeleton of a `Blockchain` class. This class should implement a simple blockchain layer that will allow us to store and retrieve blocks from the network. Your task is to implement the `state_transition` and `build_block` methods.
+
+## Blockchain internals
+
+Here we give a short overview of the rest of the blockchain infrastructure, that is provided already. You can take a look at it, and see how it works, but you don't have to modify it.
+
+You can see the implementations of the following components in the [blockchain.py](bcws/blockchain.py) file.
+
+### Addresses, transactions, and blocks
+
+All addresses in our blockchain are raw ECDSA points, serialized in their compressed form (33 bytes long). In real blockchains, the addresses are usually hashes of the public keys, and are truncated. In our blockchain, we use the public keys directly.
+
+The transactions are simple transfers of money from one address to another. Each transaction is signed by the sender's private key, and the signature is used to verify the transaction. The sender's nonce is used to prevent replay attacks. The transactions are serialized in a simple string form:
+
+```
+sender_address,receiver_address,nonce,amount,signature
+```
+
+Addresses are hex encided, nonce and amount are in decimal, and `signature` is the hex encoded signature over the rest of the data.
+
+The blocks are simple containers for the transactions. Real blockchains would only contain the has of all transactions in the block header, but we store the transactions directly in the block. The blocks are serialized in a simple string form:
+
+```
+number:nonce:parent_hash:coinbase:tx1:tx2:...:txn
+```
+
+The `number` is the block number, `nonce` is the proof of work nonce, `parent_hash` is the hash of the previous block, `coinbase` is the address of the miner, and `tx1`, `tx2`, ..., `txn` are the transactions in the block.
+
+### State manager
+
+The state manager handles serialization and deserialization of the blockchain state. Complete state for each block is stored in a separate file. A more optimized version would store only the changes between blocks.
+
+### Mempool
+
+The mempool is a component that collects all the transactions that are not yet in the blockchain. The transactions are added to the mempool when they are received, and removed when they are included in a block, time out, or are shown to be invalid.
+
+### Fork manager
+
+The fork manages is a component that is responsible for collecting all the blocks produced on the network, finding out about any missing intermediary blocks, and selecting the longest confirmed chain in case of a fork.
+
+### Chain canonicalizer
+
+The chain canonicalizer is a component that is responsible for producing the "canonical chain" from the blocks produced by the fork manager. This component is responsible for deriving the state of the blockchain from the blocks, rewinding in case of reorgs, and applying the blocks to the state.
+
+### Blockchain Node
+
+The blockchain node is a component that ties all of the components together. It is responsible for starting all of the components, and handling the communication between them.
+
+It is also responsible for orchestrating the block building process, and sending the blocks to the network.
+
+## Conclusion
+
+Congratulations! You have successfully built a simple blockchain from scratch. You have learned how to build a simple networking layer, a peering layer, a gossip layer, a search layer, and a blockchain layer. You have learned how to build more complex systems on top of simpler ones, and how to use abstractions to build more complex systems.
+
+If you want to, you can take a look at the systems that were provided, how they work, and how they are used. You can also try to build more complex systems on top of these, modify the rules of the blockchain, or build a more complex one.
+
+Good luck, and have fun building!

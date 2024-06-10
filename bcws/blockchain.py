@@ -17,7 +17,12 @@ _BLOCK_REWARD = 10000
 
 
 class Blockchain:
-    def build_block(self, state: BlockchainState, coinbase: bytes, mempool: Mempool):
+    def build_block(
+        self,
+        state: BlockchainState,
+        coinbase: bytes,
+        mempool: Mempool,
+    ) -> Block:
         """
         Build a new block from the mempool.
 
@@ -45,7 +50,7 @@ class Blockchain:
         return block
         # ---------8<---------
 
-    def apply_block(self, block: Block, state: BlockchainState):
+    def apply_block(self, block: Block, state: BlockchainState) -> None:
         """
         Apply a block to the blockchain state.
 
@@ -97,6 +102,8 @@ class Blockchain:
         state.nonces[tx.sender] += 1
 
         return True
+
+    # ---------8<---------
 
 
 class Block:
