@@ -11,7 +11,7 @@ from .gossip import Gossip, GossipMessage
 from .crypto import PrivateKey, PublicKey
 from .utils import log, run_in_background
 
-_DIFFICULTY = 6
+_DIFFICULTY = 7
 _MAX_TRANSACTIONS_PER_BLOCK = 10
 _BLOCK_REWARD = 10000
 
